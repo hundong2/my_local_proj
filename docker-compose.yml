@@ -27,8 +27,12 @@ services:
     container_name: keycloak
     command: start-dev
     environment:
-      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
-      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_USER}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_PASSWORD}
+      - PROXY_ADDRESS_FORWARDING=true
+      - KC_PROXY=edge
+      - KC_HOSTNAME=${DOMAIN:-localhost}
+      - KC_HOSTNAME_PORT=26280
     volumes:
       - keycloak_data:/opt/keycloak/data
     networks:
