@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="FastAPI Toy Server",
     description="A simple toy server with Keycloak authentication",
-    version="1.0.0",
-    root_path="/toy"
+    version="1.0.0"
+    # root_path removed - handled by Nginx
 )
 
 security = HTTPBearer()
