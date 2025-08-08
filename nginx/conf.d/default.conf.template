@@ -1,6 +1,6 @@
 # This is a template file. It will be processed by envsubst on container startup.
 server {
-    listen 80;
+    listen 26280;
     # Use resolver to make sure nginx uses docker's internal DNS
     resolver 127.0.0.11 valid=30s;
     server_name ${DOMAIN};
