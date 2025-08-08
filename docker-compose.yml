@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - proxy-net
+    depends_on:
+      - fastapi_app
+      - open-webui
+      - code-server
+      - keycloak
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    command: /bin/bash -c "envsubst '$$DOMAIN' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    command: start-dev
+    environment:
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    networks:
+      - proxy-net
+    labels:
+      - "traefik.enable=false" # Example label, if you were using Traefik
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    volumes:
+      - open-webui_data:/app/backend/data
+    networks:
+      - proxy-net
+    depends_on:
+      - keycloak
+
+  code-server:
+    image: codercom/code-server:latest
+    container_name: code-server
+    volumes:
+      - code_server_config:/home/coder/.config
+      - ./workspace:/home/coder/project # Mount local workspace
+    networks:
+      - proxy-net
+
+  fastapi_app:
+    container_name: fastapi_app
+    build:
+      context: ./fastapi_app
+      dockerfile: Dockerfile
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    networks:
+      - proxy-net
+
+networks:
+  proxy-net:
+    driver: bridge
+
+volumes:
+  keycloak_data:
+  open-webui_data:
+  code_server_config:

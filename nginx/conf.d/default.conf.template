@@ -1,0 +1,116 @@
+# This is a template file. It will be processed by envsubst on container startup.
+server {
+    listen 80;
+    # Use resolver to make sure nginx uses docker's internal DNS
+    resolver 127.0.0.11 valid=30s;
+    server_name ${DOMAIN};
+
+    # Note: For Keycloak authentication to work correctly across different paths,
+    # more advanced configuration (like using auth_request module) is needed.
+    # This setup provides basic proxying to the services.
+
+    location / {
+        # As a placeholder, we proxy the root to Keycloak's main page.
+        # In a real scenario, this might be a landing page or a specific application.
+        proxy_pass http://keycloak:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /webui/ {
+        proxy_pass http://open-webui:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+    }
+
+    location /vscode/ {
+        proxy_pass http://code-server:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+    }
+
+    location /toy/ {
+        proxy_pass http://fastapi_app:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+# ----------------------------------------------------------------
+# Optional: HTTPS server block
+#
+# To enable SSL, you need to:
+# 1. Place your certificate and private key in the ./nginx/ssl/ directory.
+#    - Certificate: fullchain.pem
+#    - Private Key: privkey.pem
+# 2. Uncomment the server block below.
+# 3. Ensure port 443 is mapped in your docker-compose.yml for the nginx service.
+# 4. It's also recommended to uncomment the redirect in the http server block
+#    to force all traffic to https.
+# ----------------------------------------------------------------
+
+# server {
+#     listen 443 ssl http2;
+#     server_name ${DOMAIN};
+#
+#     # SSL Configuration
+#     ssl_certificate /etc/nginx/ssl/fullchain.pem;
+#     ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+#     include /etc/nginx/options-ssl-nginx.conf; # Recommended SSL options
+#     ssl_dhparam /etc/nginx/ssl-dhparams.pem; # Recommended DH params
+#
+#     # Copy all the location blocks from the http server block above
+#     # to handle requests over HTTPS.
+#
+#     location / {
+#         proxy_pass http://keycloak:8080/;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+#
+#     location /webui/ {
+#         proxy_pass http://open-webui:8080/;
+#         proxy_set_header Host $host;
+#         proxy_set_header Upgrade $http_upgrade;
+#         proxy_set_header Connection "upgrade";
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#         proxy_http_version 1.1;
+#     }
+#
+#     location /vscode/ {
+#         proxy_pass http://code-server:8080/;
+#         proxy_set_header Host $host;
+#         proxy_set_header Upgrade $http_upgrade;
+#         proxy_set_header Connection "upgrade";
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#         proxy_http_version 1.1;
+#     }
+#
+#     location /toy/ {
+#         proxy_pass http://fastapi_app:8000/;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+# }
