@@ -140,24 +140,24 @@ docker-compose logs -f
 ### 6. 동작 확인
 ```bash
 # 헬스 체크
-curl http://localhost/health
+curl http://localhost:26280/health
 
 # Keycloak 상태 확인
-curl http://localhost/auth/realms/services/.well-known/openid_configuration
+curl http://localhost:26280/auth/realms/services/.well-known/openid_configuration
 
 # 각 서비스 접속 테스트
-# - Keycloak 관리: http://localhost/auth/admin
-# - OpenWebUI: http://localhost/webui (testuser/testpassword)
-# - VSCode: http://localhost/vscode (testuser/testpassword)
-# - FastAPI: http://localhost/toy (testuser/testpassword)
+# - Keycloak 관리: http://localhost:26280/auth/admin
+# - OpenWebUI: http://localhost:26280/webui (testuser/testpassword)
+# - VSCode: http://localhost:26280/vscode (testuser/testpassword)
+# - FastAPI: http://localhost:26280/toy (testuser/testpassword)
 ```
 
 ## 서비스 접근
 
-- **Keycloak 관리**: https://your-domain/auth/admin
-- **OpenWebUI**: https://your-domain/webui
-- **VSCode Server**: https://your-domain/vscode
-- **FastAPI 서버**: https://your-domain/toy
+- **Keycloak 관리**: http://localhost:26280/auth/admin (HTTPS: https://your-domain:26443/auth/admin)
+- **OpenWebUI**: http://localhost:26280/webui (HTTPS: https://your-domain:26443/webui)
+- **VSCode Server**: http://localhost:26280/vscode (HTTPS: https://your-domain:26443/vscode)
+- **FastAPI 서버**: http://localhost:26280/toy (HTTPS: https://your-domain:26443/toy)
 
 ## 운영 및 모니터링
 
@@ -237,11 +237,11 @@ MIT License
 ### FastAPI 서비스 API 호출
 ```bash
 # 공개 엔드포인트
-curl http://localhost/toy/
-curl http://localhost/toy/health
+curl http://localhost:26280/toy/
+curl http://localhost:26280/toy/health
 
 # 로그인 후 토큰 획득 (테스트용)
-TOKEN=$(curl -s -X POST "http://localhost/auth/realms/services/protocol/openid_connect/token" \
+TOKEN=$(curl -s -X POST "http://localhost:26280/auth/realms/services/protocol/openid_connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" \
   -d "client_id=fastapi" \
@@ -251,18 +251,18 @@ TOKEN=$(curl -s -X POST "http://localhost/auth/realms/services/protocol/openid_c
   jq -r '.access_token')
 
 # 보호된 엔드포인트 호출
-curl -H "Authorization: Bearer $TOKEN" http://localhost/toy/protected
-curl -H "Authorization: Bearer $TOKEN" http://localhost/toy/user/profile
-curl -H "Authorization: Bearer $TOKEN" http://localhost/toy/data
+curl -H "Authorization: Bearer $TOKEN" http://localhost:26280/toy/protected
+curl -H "Authorization: Bearer $TOKEN" http://localhost:26280/toy/user/profile
+curl -H "Authorization: Bearer $TOKEN" http://localhost:26280/toy/data
 ```
 
 ### OpenWebUI 사용
-1. http://localhost/webui 접속
+1. http://localhost:26280/webui 접속
 2. testuser/testpassword로 로그인
 3. AI 모델 설정 및 실험 실행
 
 ### VSCode Server 사용
-1. http://localhost/vscode 접속
+1. http://localhost:26280/vscode 접속
 2. testuser/testpassword로 로그인
 3. /home/coder/workspace 디렉토리에서 개발 작업
 

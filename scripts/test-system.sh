@@ -117,7 +117,7 @@ fi
 
 # Test 7: Check network ports (if services are running)
 print_status "Checking port availability..."
-ports=(80 443)
+ports=(26280 26443)
 for port in "${ports[@]}"; do
     if netstat -tuln 2>/dev/null | grep -q ":$port "; then
         print_warning "Port $port is already in use"
@@ -183,9 +183,9 @@ echo "4. Initialize Keycloak (optional):"
 echo "   ./scripts/init-keycloak.sh"
 echo
 echo "5. Access services:"
-echo "   - Keycloak Admin: http://localhost/auth/admin"
-echo "   - OpenWebUI: http://localhost/webui"
-echo "   - VSCode Server: http://localhost/vscode"
-echo "   - FastAPI: http://localhost/toy"
+echo "   - Keycloak Admin: http://localhost:26280/auth/admin"
+echo "   - OpenWebUI: http://localhost:26280/webui"
+echo "   - VSCode Server: http://localhost:26280/vscode"
+echo "   - FastAPI: http://localhost:26280/toy"
 echo
 print_status "Test completed successfully!"

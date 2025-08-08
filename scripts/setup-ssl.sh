@@ -44,7 +44,7 @@ setup_letsencrypt() {
             docker run -it --rm \
                 -v "$PWD/ssl-certs:/etc/letsencrypt" \
                 -v "$PWD/ssl-certs:/var/lib/letsencrypt" \
-                -p 80:80 \
+                -p 26280:80 \
                 certbot/certbot certonly --standalone -d "$DOMAIN"
             
             # Copy certificates to expected locations
