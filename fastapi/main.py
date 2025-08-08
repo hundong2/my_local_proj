@@ -116,8 +116,9 @@ async def root():
     }
 
 @app.get("/health")
+@app.head("/health")
 async def health():
-    """Health check endpoint"""
+    """Health check endpoint (supports both GET and HEAD)"""
     return {
         "status": "healthy",
         "timestamp": time.time(),
