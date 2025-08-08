@@ -15,9 +15,9 @@ upstream fastapi {
     server fastapi:8000;
 }
 
-# Internal auth check (simplified version)
+# Internal auth check server (not used for external requests)
 server {
-    listen 80;
+    listen 8081;  # Different port to avoid conflicts
     server_name auth-internal;
     
     location /auth-check {
@@ -32,8 +32,8 @@ server {
 
 # Main server configuration
 server {
-    listen 80;
-    server_name _;
+    listen 80 default_server;
+    server_name localhost _;
     
     # Redirect to HTTPS if SSL is enabled (update port if needed)
     # Uncomment the following lines when SSL is configured
