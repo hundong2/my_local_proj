@@ -117,7 +117,7 @@ vim .env
 sudo systemctl start docker
 
 # 전체 서비스 빌드 및 시작
-docker-compose up -d --build
+docker compose up -d --build
 
 # 서비스 상태 확인
 docker-compose ps
@@ -150,6 +150,10 @@ curl http://localhost:26280/auth/realms/services/.well-known/openid_configuratio
 # - OpenWebUI: http://localhost:26280/webui (testuser/testpassword)
 # - VSCode: http://localhost:26280/vscode (testuser/testpassword)
 # - FastAPI: http://localhost:26280/toy (testuser/testpassword)
+
+# Hugging Face 모델 다운로드/스트리밍 (인증 필요)
+curl -H "Authorization: Bearer <token>" "http://localhost:26280/toy/hf/models/download?model_id=bert-base-uncased"
+curl -H "Authorization: Bearer <token>" "http://localhost:26280/toy/hf/files/stream?relative_path=models--bert-base-uncased/snapshots/<hash>/config.json" -OJ
 ```
 
 ## 서비스 접근
@@ -158,6 +162,52 @@ curl http://localhost:26280/auth/realms/services/.well-known/openid_configuratio
 - **OpenWebUI**: http://localhost:26280/webui (HTTPS: https://your-domain:26443/webui)
 - **VSCode Server**: http://localhost:26280/vscode (HTTPS: https://your-domain:26443/vscode)
 - **FastAPI 서버**: http://localhost:26280/toy (HTTPS: https://your-domain:26443/toy)
+
+## Nginx 라우팅/프록시 설정 요약
+
+- **포트 보존**: Keycloak 리다이렉트에서 포트가 누락되지 않도록 `Host`, `X-Forwarded-*` 헤더를 `$http_host`로 전달하고 `proxy_redirect off` 설정.
+- **서브패스 운영**: `/webui`, `/vscode`, `/toy`는 프록시 앞단에서 prefix를 제거하여 백엔드가 루트 경로로 실행되도록 구성.
+- **OpenWebUI**: `WEBUI_BASE_URL=/webui`, `PUBLIC_URL=/webui` 환경변수로 서브패스 자산 경로 정합성 유지.
+
+## Keycloak 설정 주의사항
+
+- Docker 내부 접근 URL: `http://keycloak:8080`
+- 외부에서 접근: `http://localhost:26280/auth`
+- 컨테이너 환경변수: `KC_HTTP_RELATIVE_PATH=/auth`, `KC_PROXY=edge`, `KC_PROXY_ADDRESS_FORWARDING=true`
+
+## Hugging Face 캐시 설계
+
+- 공용 캐시: `${HF_HOME:-~/.cache/huggingface}`를 Nginx 뒤 서비스들과 공유 마운트.
+- FastAPI에서 `/toy/hf/models/download`로 서버측 snapshot 다운로드 트리거.
+- `/toy/hf/files/stream`로 파일 스트리밍 제공.
+
+## 운영/테스트 절차
+
+1) 빌드/실행: `docker compose up -d --build`
+2) 준비 대기: Keycloak 기동에 2~3분 소요. `docker compose logs -f keycloak`
+3) 헬스체크: `/health`, `/toy/health`
+4) Keycloak OpenID 설정: `/auth/realms/<realm>/.well-known/openid_configuration`
+5) 라우팅 확인: `/auth`, `/webui`, `/vscode`, `/toy`
+
+## DNS/SSH/SSL 확장 설계
+
+- DNS: `A` 레코드로 Nginx 호스트 매핑. `.env`의 `DOMAIN` 반영.
+- SSL: `nginx/conf.d/ssl.conf` 활성화 후 443:26443 매핑 유지. Let's Encrypt 자동화 스크립트 제공 예정 (`scripts/setup-ssl.sh`).
+- 프록시 보안 헤더: HSTS, CSP는 SSL 활성화 후 적용.
+- SSH: 호스트 OS 표준 `sshd` 사용. 방화벽 22 포트 허용. 키 인증 권장.
+
+## 트러블슈팅 핵심
+
+- 포트 누락 리다이렉트: Keycloak 클라이언트 `Base URL`을 `http://localhost:26280`로, `Valid redirect URIs`에 `http://localhost:26280/*` 포함.
+- 502/404 시 각 서비스 로그/내부 wget으로 백엔드 연결 확인. `TROUBLESHOOTING.md` 참고.
+
+## 기여 가이드와 작업 순서 (토큰 절약)
+
+1. `docker-compose.yml`과 `nginx/conf.d/default.conf`를 우선 열람
+2. 라우팅 이슈는 Nginx 헤더/리라이트 우선 점검
+3. OpenWebUI 서브패스는 환경변수 `WEBUI_BASE_URL` 확인
+4. FastAPI 추가 엔드포인트는 `/toy/*` 아래에 구현
+5. 성공 기준: `/auth`, `/webui`, `/vscode`, `/toy` 모두 200/동작
 
 ## 운영 및 모니터링
 

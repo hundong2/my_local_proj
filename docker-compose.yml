@@ -38,10 +38,13 @@ services:
       - KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak
       - KC_DB_USERNAME=${POSTGRES_USER:-keycloak}
       - KC_DB_PASSWORD=${POSTGRES_PASSWORD:-keycloak123}
-      - KC_HOSTNAME=${DOMAIN:-localhost}
+      - KC_HOSTNAME_URL=http://localhost:26280/auth
+      - KC_HOSTNAME_ADMIN_URL=http://localhost:26280/auth
       - KC_HOSTNAME_STRICT=false
       - KC_HTTP_ENABLED=true
       - KC_PROXY=edge
+      - KC_HTTP_RELATIVE_PATH=/auth
+      - KC_PROXY_ADDRESS_FORWARDING=true
     command: start
     depends_on:
       - postgres
@@ -73,8 +76,11 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-secret}
+      - WEBUI_BASE_URL=/webui
+      - PUBLIC_URL=/webui
     volumes:
       - openwebui-data:/app/backend/data
+      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
     restart: unless-stopped
     networks:
       - backend
@@ -106,6 +112,9 @@ services:
       - KEYCLOAK_REALM=${KEYCLOAK_REALM:-master}
       - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-fastapi}
       - KEYCLOAK_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET:-}
+      - HF_HOME=/home/appuser/.cache/huggingface
+    volumes:
+      - ${HF_HOME:-~/.cache/huggingface}:/home/appuser/.cache/huggingface
     restart: unless-stopped
     networks:
       - backend

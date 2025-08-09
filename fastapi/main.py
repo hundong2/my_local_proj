@@ -1,12 +1,14 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 import os
 import requests
 import time
 from typing import Optional, Dict, Any
 from jose import jwt, JWTError
 import logging
+from huggingface_hub import snapshot_download
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -23,9 +25,10 @@ security = HTTPBearer()
 
 # Configuration
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://keycloak:8080")
-KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "services")
+KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "master")
 KEYCLOAK_CLIENT_ID = os.getenv("KEYCLOAK_CLIENT_ID", "fastapi")
 KEYCLOAK_CLIENT_SECRET = os.getenv("KEYCLOAK_CLIENT_SECRET", "fastapi-secret")
+HF_CACHE_DIR = os.getenv("HF_HOME", str(Path.home() / ".cache" / "huggingface"))
 
 # Cache for public keys
 public_keys_cache = {"keys": {}, "last_updated": 0}
@@ -228,6 +231,52 @@ async def internal_server_error_handler(request: Request, exc: Exception):
             "path": str(request.url)
         }
     )
+
+# ----------------------
+# Hugging Face utilities
+# ----------------------
+
+@app.get("/hf/models/download")
+async def download_model_endpoint(model_id: str, revision: str | None = None, user: Dict[str, Any] = Depends(verify_token)):
+    """Trigger server-side download of a Hugging Face model snapshot to the shared cache.
+
+    Query params:
+    - model_id: e.g. "TheBloke/Mistral-7B-Instruct-v0.2-GGUF"
+    - revision: optional commit hash or tag
+    """
+    try:
+        local_path = snapshot_download(
+            repo_id=model_id,
+            revision=revision,
+            cache_dir=HF_CACHE_DIR,
+            local_files_only=False,
+            resume_download=True,
+        )
+        return {"status": "ok", "cached_path": str(local_path)}
+    except Exception as e:
+        logger.exception("HF download failed")
+        raise HTTPException(status_code=500, detail=f"Download failed: {e}")
+
+
+@app.get("/hf/files/stream")
+async def stream_cached_file(relative_path: str, user: Dict[str, Any] = Depends(verify_token)):
+    """Stream a cached file from the HF cache directory by relative path under HF_CACHE_DIR."""
+    base = Path(HF_CACHE_DIR)
+    target = (base / relative_path).resolve()
+    if not str(target).startswith(str(base.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid path")
+    if not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    def file_iterator(chunk_size: int = 1024 * 1024):
+        with open(target, "rb") as f:
+            while True:
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+
+    return StreamingResponse(file_iterator(), media_type="application/octet-stream")
 
 if __name__ == "__main__":
     import uvicorn
