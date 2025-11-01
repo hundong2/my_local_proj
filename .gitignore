@@ -1,0 +1,77 @@
+# --- Secrets & Credentials ---
+keycloak.env
+.env
+.env.*
+*.env
+*.secret
+*.secrets
+secrets/
+.secrets/
+*.key
+*.pem
+*.crt
+*.p12
+*.jks
+*.keystore
+*secret*
+*_secret*
+id_*
+*.asc
+
+# SSL certs (문서만 허용)
+ssl-certs/
+!ssl-certs/README.md
+
+# OAuth/OpenAI/Keycloak 등 토큰/덤프
+*.token
+*.dump
+*.bak
+keycloak-export*.json
+
+# --- Logs & Temp ---
+*.log
+logs/
+*.tmp
+*.swp
+*.swo
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+.venv/
+venv/
+
+# --- Node/JS ---
+node_modules/
+.pnpm-store/
+dist/
+build/
+
+# --- IDE/OS ---
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# --- Docker/Dev ---
+docker-compose.override.yml
+.docker/
+nginx-cache/
+nginx/cache/
+
+# --- Tool caches ---
+**/.cache/
+**/.cache/huggingface/
+
+# --- Local work dirs (필요 시 해제) ---
+code-server-data/
+workspace/
+!workspace/README.md
