@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-multipart
+python-jose[cryptography]
+requests
+redis
+psycopg2-binary
+sqlalchemy
+asyncpg
