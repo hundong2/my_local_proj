@@ -1,0 +1,26 @@
+# Ignore data directories
+data/
+data/npm/
+data/postgres/
+postgres-init/
+letsencrypt/
+
+# Ignore environment files
+.env
+.venv
+venv/
+__pycache__/
+*.pyc
+
+# Ignore IDE specific files
+.vscode/
+.idea/
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db
+
+# Documentation artifacts (optional, but good practice if auto-generated)
+# walkthrough.md
+# SSO.md
+

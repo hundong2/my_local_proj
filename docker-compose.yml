@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # Nginx Proxy Manager
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - frontend
+      - backend
+
+  # Keycloak Authorization Server
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KC_HOSTNAME_URL: http://localhost:8080/auth/
+      KC_HOSTNAME_ADMIN_URL: http://localhost:8080/auth/
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HOSTNAME_STRICT: "false" # For dev/testing
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_PROXY: edge # Important for running behind Nginx
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+
+  # Database for Keycloak (and potentially App)
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    # volumes:
+      # - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  # Redis for Caching
+  redis:
+    image: redis:alpine
+    restart: always
+    networks:
+      - backend
+
+
+
+  # Monitoring
+  grafana:
+    image: grafana/grafana
+    restart: always
+    environment:
+      GF_SERVER_ROOT_URL: http://localhost/grafana/
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_SERVER_DOMAIN: localhost
+    ports:
+      - "3000:3000"
+    networks:
+      - backend
+
+  # Backend Application
+  backend:
+    build: ./backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://keycloak:password@postgres:5432/app_db # Will need to create this DB or use separate
+      REDIS_URL: redis://redis:6379/0
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: hundong
+      KEYCLOAK_CLIENT_ID: fastapi
+    depends_on:
+      - postgres
+      - redis
+      - keycloak
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+  npm_data:
+  npm_letsencrypt:
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
